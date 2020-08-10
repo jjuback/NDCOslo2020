@@ -29,13 +29,9 @@ namespace Processes
             services.AddRazorPages();
         }
 
-        private IHostApplicationLifetime _lifetime;
-        
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifetime)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            _lifetime = lifetime;
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -59,7 +55,7 @@ namespace Processes
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
-                
+
                 endpoints.MapRazorPages();
             });
 
@@ -68,103 +64,83 @@ namespace Processes
                 CreateWindow();
             }
         }
-
-        private async void CreateWindow()
+        
+        private void CreateMenu()
         {
+            bool isMac = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
             MenuItem[] menu = null;
-            
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+
+            MenuItem[] appMenu = new MenuItem[]
+            {
+                new MenuItem { Role = MenuRole.about },
+                new MenuItem { Type = MenuType.separator },
+                new MenuItem { Role = MenuRole.services },
+                new MenuItem { Type = MenuType.separator },
+                new MenuItem { Role = MenuRole.hide },
+                new MenuItem { Role = MenuRole.hideothers },
+                new MenuItem { Role = MenuRole.unhide },
+                new MenuItem { Type = MenuType.separator },
+                new MenuItem { Role = MenuRole.quit }
+            };
+
+            MenuItem[] fileMenu = new MenuItem[]
+            {
+                new MenuItem { Label = "Save As...", Type = MenuType.normal, Click = async () => {
+                    var mainWindow = Electron.WindowManager.BrowserWindows.First();
+                    var options = new SaveDialogOptions() {
+                        Filters = new FileFilter[] { new FileFilter{ Name = "CSV Files", Extensions = new string[] { "csv" } }
+                    }};
+                    string result = await Electron.Dialog.ShowSaveDialogAsync(mainWindow, options);
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        string url = $"http://localhost:{BridgeSettings.WebPort}/SaveAs?path={result}";
+                        mainWindow.LoadURL(url);
+                    }
+                }},
+                new MenuItem { Type = MenuType.separator },
+                new MenuItem { Role = isMac ? MenuRole.close : MenuRole.quit }
+            };
+
+            MenuItem[] viewMenu = new MenuItem[]
+            {
+                new MenuItem { Role = MenuRole.reload },
+                new MenuItem { Role = MenuRole.forcereload },
+                new MenuItem { Role = MenuRole.toggledevtools },
+                new MenuItem { Type = MenuType.separator },
+                new MenuItem { Role = MenuRole.resetzoom },
+                new MenuItem { Role = MenuRole.zoomin },
+                new MenuItem { Role = MenuRole.zoomout },
+                new MenuItem { Type = MenuType.separator },
+                new MenuItem { Role = MenuRole.togglefullscreen }
+            };
+
+            if (isMac)
             {
                 menu = new MenuItem[]
                 {
-                    new MenuItem { Label = "Electron", Type = MenuType.submenu, Submenu = new MenuItem[]
-                    {
-                        new MenuItem { Role = MenuRole.about },
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.services },
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.hide },
-                        new MenuItem { Role = MenuRole.hideothers },
-                        new MenuItem { Role = MenuRole.unhide },
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.quit }
-                    }},
-            
-                    new MenuItem { Label = "File", Type = MenuType.submenu, Submenu = new MenuItem[]
-                    {
-                        new MenuItem { Label = "Save As...", Type = MenuType.normal, Click = async () => {
-                            var mainWindow = Electron.WindowManager.BrowserWindows.First();
-                            var options = new SaveDialogOptions() {
-                                Filters = new FileFilter[] { new FileFilter{ Name = "CSV Files", Extensions = new string[] { "csv" } }
-                            }};
-                            string result = await Electron.Dialog.ShowSaveDialogAsync(mainWindow, options);
-                            if (!string.IsNullOrEmpty(result))
-                            {
-                                string url = $"http://localhost:{BridgeSettings.WebPort}/SaveAs?path={result}";
-                                Electron.WindowManager.BrowserWindows.First().LoadURL(url);
-                            }
-                        }},
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.close },
-                    }},
-            
-                    new MenuItem { Label = "View", Type = MenuType.submenu, Submenu = new MenuItem[]
-                    {
-                        new MenuItem { Role = MenuRole.reload },
-                        new MenuItem { Role = MenuRole.forcereload },
-                        new MenuItem { Role = MenuRole.toggledevtools },
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.resetzoom },
-                        new MenuItem { Role = MenuRole.zoomin },
-                        new MenuItem { Role = MenuRole.zoomout },
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.togglefullscreen }
-                    }}
+                    new MenuItem { Label = "Electron", Type = MenuType.submenu, Submenu = appMenu },
+                    new MenuItem { Label = "File", Type = MenuType.submenu, Submenu = fileMenu },
+                    new MenuItem { Label = "View", Type = MenuType.submenu, Submenu = viewMenu }
                 };
             }
             else
             {
                 menu = new MenuItem[]
                 {
-                    new MenuItem { Label = "File", Type = MenuType.submenu, Submenu = new MenuItem[]
-                    {
-                        new MenuItem { Label = "Save As...", Type = MenuType.normal, Click = async () => {
-                            var mainWindow = Electron.WindowManager.BrowserWindows.First();
-                            var options = new SaveDialogOptions() {
-                                Filters = new FileFilter[] { new FileFilter{ Name = "CSV Files", Extensions = new string[] { "csv" } }
-                            }};
-                            string result = await Electron.Dialog.ShowSaveDialogAsync(mainWindow, options);
-                            if (!string.IsNullOrEmpty(result))
-                            {
-                                string url = $"http://localhost:{BridgeSettings.WebPort}/SaveAs?path={result}";
-                                Electron.WindowManager.BrowserWindows.First().LoadURL(url);
-                            }
-                        }},
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.quit },
-                    }},
-            
-                    new MenuItem { Label = "View", Type = MenuType.submenu, Submenu = new MenuItem[]
-                    {
-                        new MenuItem { Role = MenuRole.reload },
-                        new MenuItem { Role = MenuRole.forcereload },
-                        new MenuItem { Role = MenuRole.toggledevtools },
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.resetzoom },
-                        new MenuItem { Role = MenuRole.zoomin },
-                        new MenuItem { Role = MenuRole.zoomout },
-                        new MenuItem { Type = MenuType.separator },
-                        new MenuItem { Role = MenuRole.togglefullscreen }
-                    }}
+                    new MenuItem { Label = "File", Type = MenuType.submenu, Submenu = fileMenu },
+                    new MenuItem { Label = "View", Type = MenuType.submenu, Submenu = viewMenu }
                 };
             }
-            
+
             Electron.Menu.SetApplicationMenu(menu);
-            
+        }
+        
+        private async void CreateWindow()
+        {
+            CreateMenu();
             var window = await Electron.WindowManager.CreateWindowAsync();
             window.OnClosed += () => {
                 Electron.App.Quit();
-                _lifetime.StopApplication();
             };
         }
     }

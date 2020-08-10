@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +26,7 @@ namespace Processes.Pages
             items.ForEach(p => {
                 writer.Write(p.Id);
                 writer.Write(",");
-                writer.Write(p.ProcessName);
+                writer.Write(p.MainModule.ModuleName);
                 writer.Write(",");
                 writer.WriteLine(p.WorkingSet64);
             });
